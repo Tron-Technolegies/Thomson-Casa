@@ -48,18 +48,6 @@ function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Dashboard Heading */}
-
-      {/* <div>
-        <h1 className="text-3xl font-bold text-gray-800">Dashboard Overview</h1>
-
-        <p className="text-gray-500 mt-1">Welcome back! Here's what's happening today.</p>
-      </div> */}
-
-      {/* ==========================
-            Stat Cards
-      =========================== */}
-
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {stats.map((item, index) => (
           <StatCard
@@ -72,10 +60,6 @@ function Dashboard() {
         ))}
       </section>
 
-      {/* ==========================
-            Revenue + Payment
-      =========================== */}
-
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
           <RevenueChart />
@@ -84,19 +68,11 @@ function Dashboard() {
         <PaymentMethods />
       </section>
 
-      {/* ==========================
-            Customer + Outstanding
-      =========================== */}
-
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <CustomerBalance />
 
         <OutstandingPayments />
       </section>
-
-      {/* ==========================
-            Bottom Section
-      =========================== */}
 
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <AdvanceBalances />

@@ -12,7 +12,7 @@ function FilterBar() {
         <button
           key={tab}
           onClick={() => setActiveTab(tab)}
-          className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+          className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium cursor-pointer transition-all duration-300 ${
             activeTab === tab ? "bg-[#4B5EAA] text-white shadow" : "text-gray-500 hover:bg-gray-100"
           }`}
         >
