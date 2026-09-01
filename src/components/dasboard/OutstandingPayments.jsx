@@ -1,25 +1,32 @@
-const invoices = [
-  {
-    invoice: "0441",
-    customer: "Vertex Corp",
-    amount: "₹84,000",
-    status: "Overdue",
-  },
-  {
-    invoice: "0437",
-    customer: "Falcon",
-    amount: "₹52,000",
-    status: "Due Soon",
-  },
-  {
-    invoice: "0451",
-    customer: "Meridian",
-    amount: "₹31,500",
-    status: "Pending",
-  },
-];
+import React, { useState, useEffect } from "react";
+import { api } from "../../services/api";
+
+const badge = {
+  Overdue: "bg-red-100 text-red-600",
+  Partial: "bg-yellow-100 text-yellow-700",
+  Unpaid: "bg-orange-100 text-orange-600",
+};
 
 function OutstandingPayments() {
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await api.get("/accounts/outstanding/");
+        if (res.success && res.invoices) {
+          setInvoices(res.invoices.slice(0, 5));
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 overflow-auto">
       <h2 className="text-2xl font-semibold mb-6">Outstanding Payments</h2>
@@ -35,21 +42,24 @@ function OutstandingPayments() {
         </thead>
 
         <tbody>
-          {invoices.map((item) => (
-            <tr key={item.invoice} className="border-t border-[#00000026]">
-              <td className="py-4">{item.invoice}</td>
-
-              <td>{item.customer}</td>
-
-              <td>{item.amount}</td>
-
-              <td>
-                <span className="px-3 py-1 rounded-full bg-red-100 text-red-500 text-xs">
-                  {item.status}
-                </span>
-              </td>
-            </tr>
-          ))}
+          {loading ? (
+            <tr><td colSpan="4" className="text-center py-4 text-gray-500">Loading...</td></tr>
+          ) : invoices.length === 0 ? (
+            <tr><td colSpan="4" className="text-center py-4 text-gray-500">No outstanding payments.</td></tr>
+          ) : (
+            invoices.map((item) => (
+              <tr key={item.id} className="border-t border-[#00000026] hover:bg-gray-50">
+                <td className="py-4 font-bold text-[#4B5EAA]">{item.id}</td>
+                <td className="font-medium text-gray-800">{item.customer}</td>
+                <td className="font-bold text-red-600">₹{item.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                <td>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${badge[item.status] || badge.Unpaid}`}>
+                    {item.status}
+                  </span>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

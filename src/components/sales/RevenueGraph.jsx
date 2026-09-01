@@ -9,22 +9,13 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const data = [
-  { day: "Mon", revenue: 12000 },
-  { day: "Tue", revenue: 18000 },
-  { day: "Wed", revenue: 9000 },
-  { day: "Thu", revenue: 22000 },
-  { day: "Fri", revenue: 32000 },
-  { day: "Sat", revenue: 29000 },
-  { day: "Sun", revenue: 15000 },
-];
-export default function RevenueGraph() {
+export default function RevenueGraph({ data = [], period = "Daily" }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-2xl font-semibold text-gray-800">Revenue Overview</h2>
 
-        <span className="text-sm text-gray-400">Daily View</span>
+        <span className="text-sm text-gray-400">{period} View</span>
       </div>
 
       <div className="h-[380px]">

@@ -1,27 +1,4 @@
-const methods = [
-  {
-    name: "Bank Transfer",
-    amount: "₹58,212",
-    percent: 42,
-  },
-  {
-    name: "Cheque",
-    amount: "₹38,808",
-    percent: 28,
-  },
-  {
-    name: "UPI",
-    amount: "₹24,948",
-    percent: 18,
-  },
-  {
-    name: "Cash",
-    amount: "₹16,632",
-    percent: 12,
-  },
-];
-
-function PaymentMethods() {
+function PaymentMethods({ methods = [] }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6">
       <h2 className="text-2xl font-semibold mb-8">Payment Methods</h2>

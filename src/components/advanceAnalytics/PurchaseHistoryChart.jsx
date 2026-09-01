@@ -1,16 +1,6 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
-const data = [
-  { month: "Jan", purchase: 45000 },
-  { month: "Feb", purchase: 38000 },
-  { month: "Mar", purchase: 42000 },
-  { month: "Apr", purchase: 28000 },
-  { month: "May", purchase: 31000 },
-  { month: "Jun", purchase: 26000 },
-  { month: "Jul", purchase: 35000 },
-];
-
-function PurchaseHistoryChart() {
+function PurchaseHistoryChart({ data = [] }) {
   return (
     <div className="bg-white rounded-2xl border border-[#00000026] p-6">
       <div className="flex justify-between items-center mb-8">

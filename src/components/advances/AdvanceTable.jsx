@@ -2,57 +2,27 @@ import { useState } from "react";
 import { FaPlus, FaFilePdf } from "react-icons/fa";
 import RecordAdvanceModal from "./RecordAdvanceModal";
 
-const rows = [
-  {
-    id: "ADV-0021",
-    customer: "Apex Industries",
-    amount: "₹1,50,000",
-    method: "Bank Transfer",
-    reference: "RTGS-20260701-004",
-    date: "01 Jul 2026",
-    note: "Advance for Q3 orders",
-  },
-  {
-    id: "ADV-0020",
-    customer: "Pinnacle Traders",
-    amount: "₹2,00,000",
-    method: "Cheque",
-    reference: "CHQ-440012",
-    date: "28 Jun 2026",
-    note: "Pre-delivery advance",
-  },
-  {
-    id: "ADV-0019",
-    customer: "Nexus Solutions",
-    amount: "₹1,00,000",
-    method: "UPI",
-    reference: "UPI-9801234500",
-    date: "25 Jun 2026",
-    note: "Project advance",
-  },
-];
-
-function AdvanceTable() {
+function AdvanceTable({ advances = [], loading = false, onSuccess }) {
   const [openModal, setOpenModal] = useState(false);
 
   return (
     <>
       <div className="bg-white rounded-2xl border border-[#00000026] overflow-hidden">
         {/* Header */}
-
         <div className="flex justify-between items-center p-5 border-b border-[#00000026]">
-          <h2 className="font-semibold text-lg">Records</h2>
-
+          <h2 className="font-semibold text-lg text-gray-800">Records</h2>
           <div className="flex gap-3">
             <button
               onClick={() => setOpenModal(true)}
-              className="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg flex  cursor-pointer items-center gap-2"
+              className="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg flex cursor-pointer items-center gap-2 font-medium transition"
             >
               <FaPlus size={12} />
               Record Advance
             </button>
-
-            <button className="bg-red-100 text-red-500 px-4 py-2 rounded-lg flex items-center gap-2">
+            <button 
+              onClick={() => window.open('http://localhost:8000/api/accounts/advances/pdf/', '_blank')}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition cursor-pointer"
+            >
               <FaFilePdf size={12} />
               PDF
             </button>
@@ -60,45 +30,48 @@ function AdvanceTable() {
         </div>
 
         {/* Table */}
-
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr className="text-left text-gray-500 text-sm">
-                <th className="p-4">ID</th>
-                <th>Customer</th>
-                <th>Amount</th>
-                <th>Payment Method</th>
-                <th>Reference</th>
-                <th>Date</th>
-                <th>Note</th>
+                <th className="p-4 font-semibold uppercase tracking-wider text-xs">ID</th>
+                <th className="font-semibold uppercase tracking-wider text-xs">Customer</th>
+                <th className="font-semibold uppercase tracking-wider text-xs">Amount</th>
+                <th className="font-semibold uppercase tracking-wider text-xs">Payment Method</th>
+                <th className="font-semibold uppercase tracking-wider text-xs">Reference</th>
+                <th className="font-semibold uppercase tracking-wider text-xs">Date</th>
+                <th className="font-semibold uppercase tracking-wider text-xs">Note</th>
               </tr>
             </thead>
 
             <tbody>
-              {rows.map((row) => (
-                <tr key={row.id} className="border-t border-[#00000026] hover:bg-gray-50">
-                  <td className="p-4 text-blue-600">{row.id}</td>
-
-                  <td>{row.customer}</td>
-
-                  <td>{row.amount}</td>
-
-                  <td>{row.method}</td>
-
-                  <td>{row.reference}</td>
-
-                  <td>{row.date}</td>
-
-                  <td>{row.note}</td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan="7" className="text-center py-6 text-gray-500">Loading advances...</td></tr>
+              ) : advances.length === 0 ? (
+                <tr><td colSpan="7" className="text-center py-6 text-gray-500">No advances recorded.</td></tr>
+              ) : (
+                advances.map((row) => (
+                  <tr key={row.id} className="border-t border-[#00000026] hover:bg-gray-50 transition">
+                    <td className="p-4 font-bold text-blue-600">{row.id}</td>
+                    <td className="font-semibold text-gray-800">{row.customer}</td>
+                    <td className="font-bold text-green-600">₹{row.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td className="text-gray-600 font-medium">{row.payment_method}</td>
+                    <td className="text-gray-500 text-sm">{row.reference_no || "-"}</td>
+                    <td className="text-gray-600 text-sm">{row.date}</td>
+                    <td className="text-gray-500 text-sm">{row.note || "-"}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      <RecordAdvanceModal open={openModal} onClose={() => setOpenModal(false)} />
+      <RecordAdvanceModal 
+        open={openModal} 
+        onClose={() => setOpenModal(false)} 
+        onSuccess={onSuccess} 
+      />
     </>
   );
 }

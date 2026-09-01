@@ -1,12 +1,17 @@
 import { FiCalendar, FiFilter } from "react-icons/fi";
 
-function DateRange() {
+function DateRange({ date, setDate }) {
   return (
     <div className="flex gap-3">
-      <button className="flex items-center gap-2 border-[#00000026] border rounded-xl px-4 py-2 bg-[#EEF1F8] text-[#7A8AAA]">
+      <div className="flex items-center gap-2 border-[#00000026] border rounded-xl px-4 py-2 bg-[#EEF1F8] text-[#7A8AAA]">
         <FiCalendar />
-        01 Jul 2026 — 09 Jul 2026
-      </button>
+        <input 
+          type="date" 
+          value={date || ""}
+          onChange={(e) => setDate(e.target.value)}
+          className="bg-transparent outline-none cursor-pointer"
+        />
+      </div>
 
       <button className="flex items-center gap-2 border-[#00000026] border rounded-xl px-4 py-2 bg-[#EEF1F8] text-[#7A8AAA]">
         <FiFilter />

@@ -1,100 +1,91 @@
-const rows = [
-  {
-    order: "INV-2026-0458",
-    customer: "Vertex Corp",
-    amount: "₹84,000",
-    due: "08 Jul 2026",
-    overdue: "8 Days",
-    status: "Overdue",
-  },
-  {
-    order: "INV-2026-0457",
-    customer: "Falcon Enterprises",
-    amount: "₹52,000",
-    due: "05 Jul 2026",
-    overdue: "4 Days",
-    status: "Overdue",
-  },
-  {
-    order: "INV-2026-0456",
-    customer: "Meridian Ltd",
-    amount: "₹31,500",
-    due: "15 Jul 2026",
-    overdue: "--",
-    status: "Due Soon",
-  },
-  {
-    order: "INV-2026-0455",
-    customer: "Nexus Solutions",
-    amount: "₹67,800",
-    due: "20 Jul 2026",
-    overdue: "--",
-    status: "Due Soon",
-  },
-  {
-    order: "INV-2026-0454",
-    customer: "Summit Holdings",
-    amount: "₹19,200",
-    due: "25 Jul 2026",
-    overdue: "--",
-    status: "Pending",
-  },
-];
+import React, { useState } from "react";
+import RecordPaymentModal from "../invoice/RecordPaymentModal";
+import { FaMoneyBillWave } from "react-icons/fa";
 
 const badge = {
   Overdue: "bg-red-100 text-red-600",
-  "Due Soon": "bg-orange-100 text-orange-600",
-  Pending: "bg-yellow-100 text-yellow-700",
+  Partial: "bg-yellow-100 text-yellow-700",
+  Unpaid: "bg-orange-100 text-orange-600",
 };
 
-function OutstandingTable() {
+function OutstandingTable({ invoices = [], loading = false, onPaymentSuccess }) {
+  const [openModal, setOpenModal] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+
   return (
-    <div className="bg-white rounded-2xl border border-[#00000026] overflow-hidden">
-      <div className="flex justify-between items-center p-6 border-b border-[#00000026]">
-        <h2 className="text-xl font-semibold">Outstanding Payment Details</h2>
+    <>
+      <div className="bg-white rounded-2xl border border-[#00000026] overflow-hidden">
+        <div className="flex justify-between items-center p-6 border-b border-[#00000026]">
+          <h2 className="text-xl font-semibold">Outstanding Payment Details</h2>
+          <button 
+            onClick={() => window.open('http://localhost:8000/api/accounts/outstanding/pdf/', '_blank')}
+            className="bg-red-100 text-red-500 px-4 py-2 rounded-lg font-semibold hover:bg-red-200 transition-colors cursor-pointer"
+          >
+            PDF
+          </button>
+        </div>
 
-        <button className="bg-red-100 text-red-500 px-4 py-2 rounded-lg">PDF</button>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 text-gray-500">
-            <tr>
-              <th className="p-5 text-left">Orders</th>
-              <th className="text-left">Customer</th>
-              <th className="text-left">Amount</th>
-              <th className="text-left">Due Date</th>
-              <th className="text-left">Days Overdue</th>
-              <th className="text-left">Status</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {rows.map((row, index) => (
-              <tr key={index} className="border-t border-[#00000026] hover:bg-gray-50">
-                <td className="p-5 text-blue-600">{row.order}</td>
-
-                <td>{row.customer}</td>
-
-                <td>{row.amount}</td>
-
-                <td>{row.due}</td>
-
-                <td className="text-red-500">{row.overdue}</td>
-
-                <td>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${badge[row.status]}`}
-                  >
-                    {row.status}
-                  </span>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 text-gray-500">
+              <tr>
+                <th className="p-5 text-left font-bold uppercase tracking-wider text-xs">Invoice No</th>
+                <th className="text-left font-bold uppercase tracking-wider text-xs">Customer</th>
+                <th className="text-left font-bold uppercase tracking-wider text-xs">Outstanding</th>
+                <th className="text-left font-bold uppercase tracking-wider text-xs">Due Date</th>
+                <th className="text-left font-bold uppercase tracking-wider text-xs">Status</th>
+                <th className="text-center font-bold uppercase tracking-wider text-xs p-5">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="p-5 text-center text-gray-500">Loading outstanding invoices...</td>
+                </tr>
+              ) : invoices.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-5 text-center text-gray-500">No outstanding invoices.</td>
+                </tr>
+              ) : (
+                invoices.map((row, index) => (
+                  <tr key={index} className="border-t border-[#00000026] hover:bg-gray-50">
+                    <td className="p-5 font-bold text-[#4B5EAA]">{row.id}</td>
+                    <td className="font-semibold text-gray-900">{row.customer}</td>
+                    <td className="font-black text-red-600">₹{row.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td className="text-gray-600 font-medium">{row.due_date}</td>
+                    <td>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${badge[row.status] || badge.Unpaid}`}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td className="p-5 text-center">
+                      <button
+                        onClick={() => {
+                          setSelectedInvoice(row);
+                          setOpenModal(true);
+                        }}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 cursor-pointer hover:bg-green-700 mx-auto text-sm font-bold transition-colors shadow-sm"
+                      >
+                        <FaMoneyBillWave />
+                        Pay
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+
+      <RecordPaymentModal
+        open={openModal}
+        onClose={() => setOpenModal(false)}
+        invoice={selectedInvoice}
+        onSuccess={onPaymentSuccess}
+      />
+    </>
   );
 }
 

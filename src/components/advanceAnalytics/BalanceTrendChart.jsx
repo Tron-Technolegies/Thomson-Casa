@@ -10,17 +10,7 @@ import {
   AreaChart,
 } from "recharts";
 
-const data = [
-  { month: "Jan", balance: 300000 },
-  { month: "Feb", balance: 255000 },
-  { month: "Mar", balance: 217000 },
-  { month: "Apr", balance: 175000 },
-  { month: "May", balance: 147000 },
-  { month: "Jun", balance: 116000 },
-  { month: "Jul", balance: 90000 },
-];
-
-function BalanceTrendChart() {
+function BalanceTrendChart({ data = [] }) {
   return (
     <div className="bg-white rounded-2xl border border-[#00000026] p-6">
       <div className="flex justify-between mb-8">
