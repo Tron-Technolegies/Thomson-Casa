@@ -10,6 +10,7 @@ import RecordAdvance from "./pages/RecordAdvance";
 import AdvanceBalance from "./pages/AdvanceBalance";
 import AdvanceAnalytics from "./pages/AdvanceAnalytics";
 import Invoice from "./pages/Invoice";
+import Notification from "./pages/Notification";
 
 function App() {
   return (
@@ -30,6 +31,8 @@ function App() {
         <Route path="advance-analytics" element={<AdvanceAnalytics />} />
 
         <Route path="invoice" element={<Invoice />} />
+        
+        <Route path="notification" element={<Notification />} />
       </Route>
     </Routes>
   );

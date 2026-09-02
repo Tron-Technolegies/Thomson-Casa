@@ -1,5 +1,6 @@
 import React from "react";
 import { FaFilePdf } from "react-icons/fa";
+import { BASE_URL } from "../../services/api";
 
 const badge = {
   Paid: "bg-green-100 text-green-700",
@@ -13,7 +14,7 @@ function RecentTransactions({ sales = [], loading = false }) {
       <div className="flex justify-between items-center p-6 border-b border-[#00000026]">
         <h2 className="text-2xl font-semibold">Recent Transactions</h2>
         <button 
-          onClick={() => window.open('http://localhost:8000/api/accounts/reports/sales/pdf/', '_blank')}
+          onClick={() => window.open(`${BASE_URL}/accounts/reports/sales/pdf/`, '_blank')}
           className="bg-red-100 text-red-500 px-4 py-2 rounded-lg font-medium hover:bg-red-200 transition cursor-pointer"
         >
           <FaFilePdf className="inline mr-2" /> PDF

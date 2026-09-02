@@ -6,6 +6,7 @@ import PaymentMethods from "../components/dasboard/PaymentMethods";
 import RevenueChart from "../components/dasboard/RevenueChart";
 import StatCard from "../components/dasboard/StatCard";
 import TopCustomers from "../components/dasboard/TopCustomers";
+import MarketPrices from "../components/dasboard/MarketPrices";
 import DateRange from "../components/sales/DateRange";
 import { api } from "../services/api";
 
@@ -93,7 +94,7 @@ function Dashboard() {
         <DateRange date={date} setDate={setDate} />
       </div>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6">
         {stats.map((item, index) => (
           <StatCard
             key={index}
@@ -103,6 +104,7 @@ function Dashboard() {
             color={item.color}
           />
         ))}
+        <MarketPrices date={date} />
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -114,13 +116,13 @@ function Dashboard() {
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <CustomerBalance />
+        <CustomerBalance date={date} />
 
-        <OutstandingPayments />
+        <OutstandingPayments date={date} />
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <AdvanceBalances />
+        <AdvanceBalances date={date} />
 
         <TopCustomers customers={charts.top_customers} />
       </section>

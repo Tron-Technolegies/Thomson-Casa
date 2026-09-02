@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../../services/api";
 
-function AdvanceBalances() {
+function AdvanceBalances({ date }) {
   const [balances, setBalances] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await api.get("/accounts/advances/balances/");
+        const url = date ? `/accounts/advances/balances/?date=${date}` : "/accounts/advances/balances/";
+        const res = await api.get(url);
         if (res.success && res.balances) {
           // Sort by percent descending and take top 5 for the dashboard widget
           const top = res.balances.sort((a, b) => b.percent - a.percent).slice(0, 5);
@@ -21,7 +22,7 @@ function AdvanceBalances() {
       }
     };
     fetchData();
-  }, []);
+  }, [date]);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6">

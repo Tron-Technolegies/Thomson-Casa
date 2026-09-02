@@ -14,7 +14,17 @@ function PurchasePricingModal({ open, onClose, order, dailyPrices, onSuccess }) 
     if (order && order.items) {
       const initialPrices = {};
       order.items.forEach(item => {
-        initialPrices[item.id] = item.price_per_kg || "";
+        let price = item.price_per_kg || "";
+        
+        // If no price set, try to prefill from market
+        if (!price && dailyPrices && Array.isArray(dailyPrices)) {
+          const priceObj = dailyPrices.find(p => p.chicken_type === item.chicken_type);
+          if (priceObj) {
+            price = priceObj.price;
+          }
+        }
+        
+        initialPrices[item.id] = price;
       });
       setItemPrices(initialPrices);
       setGstType("percentage");
@@ -22,7 +32,7 @@ function PurchasePricingModal({ open, onClose, order, dailyPrices, onSuccess }) 
       setError("");
       setSuccessMsg("");
     }
-  }, [order]);
+  }, [order, dailyPrices]);
 
   if (!open || !order) return null;
 
@@ -34,15 +44,36 @@ function PurchasePricingModal({ open, onClose, order, dailyPrices, onSuccess }) 
   };
 
   const getMarketPrice = (type) => {
-    return dailyPrices ? dailyPrices[type] : null;
+    if (!dailyPrices || !Array.isArray(dailyPrices)) return null;
+    const priceObj = dailyPrices.find(p => p.chicken_type === type);
+    return priceObj ? priceObj.price : null;
   };
 
   const setMarketPrice = (id, type) => {
     const p = getMarketPrice(type);
-    if (p) {
+    if (p !== null) {
       handlePriceChange(id, p);
     }
   };
+
+  // Live calculation for preview
+  const currentSubtotal = order?.items?.reduce((sum, item) => {
+    const val = parseFloat(itemPrices[item.id]);
+    const weight = parseFloat(item.weight);
+    if (!isNaN(val) && !isNaN(weight)) {
+      return sum + (val * weight);
+    }
+    return sum;
+  }, 0) || 0;
+
+  let currentGstAmount = 0;
+  const gstVal = parseFloat(gstInput) || 0;
+  if (gstType === "percentage") {
+    currentGstAmount = currentSubtotal * (gstVal / 100);
+  } else {
+    currentGstAmount = gstVal;
+  }
+  const currentTotal = currentSubtotal + currentGstAmount;
 
   const handleSave = async () => {
     setError("");
@@ -262,6 +293,22 @@ function PurchasePricingModal({ open, onClose, order, dailyPrices, onSuccess }) 
                     onChange={(e) => setGstInput(e.target.value)}
                     className="mt-2 w-full border border-[#00000026] rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-[#4B5EAA]"
                   />
+                </div>
+              </div>
+              
+              {/* Live Preview */}
+              <div className="mt-4 pt-4 border-t border-[#00000015]">
+                <div className="flex justify-between items-center text-sm mb-2 text-gray-600">
+                  <span>Subtotal</span>
+                  <span className="font-medium">₹{currentSubtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm mb-2 text-gray-600">
+                  <span>GST Amount</span>
+                  <span className="font-medium">₹{currentGstAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center text-base mt-2 pt-2 border-t border-[#00000015] text-gray-900 font-bold">
+                  <span>Total Amount</span>
+                  <span className="text-[#4B5EAA]">₹{currentTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>

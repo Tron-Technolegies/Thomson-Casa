@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaPlus, FaFilePdf } from "react-icons/fa";
 import RecordAdvanceModal from "./RecordAdvanceModal";
+import { BASE_URL } from "../../services/api";
 
 function AdvanceTable({ advances = [], loading = false, onSuccess }) {
   const [openModal, setOpenModal] = useState(false);
@@ -20,7 +21,7 @@ function AdvanceTable({ advances = [], loading = false, onSuccess }) {
               Record Advance
             </button>
             <button 
-              onClick={() => window.open('http://localhost:8000/api/accounts/advances/pdf/', '_blank')}
+              onClick={() => window.open(`${BASE_URL}/accounts/advances/pdf/`, '_blank')}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition cursor-pointer"
             >
               <FaFilePdf size={12} />

@@ -1,5 +1,6 @@
 import React from "react";
 import { FaFilePdf, FaPrint } from "react-icons/fa";
+import { BASE_URL } from "../../services/api";
 
 function BalanceTable({ balances = [], loading = false }) {
   return (
@@ -13,19 +14,19 @@ function BalanceTable({ balances = [], loading = false }) {
 
         <div className="flex gap-3">
           <button 
-            onClick={() => window.open('http://localhost:8000/api/accounts/advances/balances/pdf/', '_blank')}
+            onClick={() => window.open(`${BASE_URL}/accounts/advances/balances/pdf/`, '_blank')}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition cursor-pointer"
           >
             <FaFilePdf />
             PDF
           </button>
-          <button 
+          {/* <button 
             onClick={() => window.print()}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-100 transition cursor-pointer"
           >
             <FaPrint />
             Print
-          </button>
+          </button> */}
         </div>
       </div>
 

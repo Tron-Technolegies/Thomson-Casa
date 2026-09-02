@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { api } from "../../services/api";
 
-function CustomerBalance() {
+function CustomerBalance({ date }) {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await api.get("/accounts/advances/balances/");
+        const url = date ? `/accounts/advances/balances/?date=${date}` : "/accounts/advances/balances/";
+        const res = await api.get(url);
         if (res.success && res.balances) {
           // Take top 5 for the dashboard widget
           setCustomers(res.balances.slice(0, 5));
@@ -20,11 +21,13 @@ function CustomerBalance() {
       }
     };
     fetchData();
-  }, []);
+  }, [date]);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 overflow-auto">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 overflow-hidden">
       <h2 className="text-2xl font-semibold mb-6">Customer Balance</h2>
+
+      <div className="overflow-x-auto">
 
       <table className="w-full text-sm">
         <thead className="text-left text-gray-500">
@@ -55,6 +58,7 @@ function CustomerBalance() {
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

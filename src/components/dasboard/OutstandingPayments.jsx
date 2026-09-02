@@ -7,14 +7,15 @@ const badge = {
   Unpaid: "bg-orange-100 text-orange-600",
 };
 
-function OutstandingPayments() {
+function OutstandingPayments({ date }) {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await api.get("/accounts/outstanding/");
+        const url = date ? `/accounts/outstanding/?date=${date}` : "/accounts/outstanding/";
+        const res = await api.get(url);
         if (res.success && res.invoices) {
           setInvoices(res.invoices.slice(0, 5));
         }
@@ -25,11 +26,13 @@ function OutstandingPayments() {
       }
     };
     fetchData();
-  }, []);
+  }, [date]);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 overflow-auto">
+    <div className="bg-white rounded-2xl border border-gray-200 p-6 overflow-hidden">
       <h2 className="text-2xl font-semibold mb-6">Outstanding Payments</h2>
+
+      <div className="overflow-x-auto">
 
       <table className="w-full text-sm">
         <thead className="text-left text-gray-500">
@@ -62,6 +65,7 @@ function OutstandingPayments() {
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

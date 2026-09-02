@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import { FaFilePdf, FaShareAlt, FaMoneyBillWave } from "react-icons/fa";
-import { api } from "../../services/api";
+import { api, BASE_URL } from "../../services/api";
 import RecordPaymentModal from "./RecordPaymentModal";
 
 function InvoicePreviewModal({ open, onClose, invoice, onPaymentSuccess }) {
@@ -35,7 +35,7 @@ function InvoicePreviewModal({ open, onClose, invoice, onPaymentSuccess }) {
   const handleDownloadPDF = () => {
     if (!invoice) return;
     const invoiceId = invoice.invoice_id || invoice.id;
-    window.open(`http://localhost:8000/api/accounts/invoices/${invoiceId}/pdf/`, '_blank');
+    window.open(`${BASE_URL}/accounts/invoices/${invoiceId}/pdf/`, '_blank');
   };
 
   if (!open || !invoice) return null;

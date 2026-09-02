@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import RecordPaymentModal from "../invoice/RecordPaymentModal";
 import { FaMoneyBillWave } from "react-icons/fa";
+import { BASE_URL } from "../../services/api";
 
 const badge = {
   Overdue: "bg-red-100 text-red-600",
@@ -18,7 +19,7 @@ function OutstandingTable({ invoices = [], loading = false, onPaymentSuccess }) 
         <div className="flex justify-between items-center p-6 border-b border-[#00000026]">
           <h2 className="text-xl font-semibold">Outstanding Payment Details</h2>
           <button 
-            onClick={() => window.open('http://localhost:8000/api/accounts/outstanding/pdf/', '_blank')}
+            onClick={() => window.open(`${BASE_URL}/accounts/outstanding/pdf/`, '_blank')}
             className="bg-red-100 text-red-500 px-4 py-2 rounded-lg font-semibold hover:bg-red-200 transition-colors cursor-pointer"
           >
             PDF

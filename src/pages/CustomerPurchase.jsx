@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import PurchaseStatCard from "../components/purchase/PurchaseStatCard";
-import MarketPriceCard from "../components/purchase/MarketPriceCard";
+import MarketPrices from "../components/dasboard/MarketPrices";
 import PurchaseTable from "../components/purchase/PurchaseTable";
 import DateRange from "../components/sales/DateRange";
 import { api } from "../services/api";
@@ -36,11 +36,6 @@ function CustomerPurchase() {
   const totalWeight = orders.reduce((sum, o) => sum + (o.total_weight || 0), 0);
   const totalOrders = orders.length;
 
-  const getPrice = (type) => {
-    const p = prices[type];
-    return p ? `₹${p}/kg` : "₹--/kg";
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -63,9 +58,8 @@ function CustomerPurchase() {
           growth="Orders ready for accounts" 
         />
 
-        <div className="space-y-4">
-          <MarketPriceCard title="Market Price — Dressed" price={getPrice('Dressed Chicken')} />
-          <MarketPriceCard title="Market Price — Full" price={getPrice('Full Chicken')} />
+        <div className="h-full">
+          <MarketPrices date={date} />
         </div>
       </div>
 

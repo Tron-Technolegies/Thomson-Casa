@@ -12,11 +12,6 @@ function DateRange({ date, setDate }) {
           className="bg-transparent outline-none cursor-pointer"
         />
       </div>
-
-      <button className="flex items-center gap-2 border-[#00000026] border rounded-xl px-4 py-2 bg-[#EEF1F8] text-[#7A8AAA]">
-        <FiFilter />
-        Filter
-      </button>
     </div>
   );
 }
