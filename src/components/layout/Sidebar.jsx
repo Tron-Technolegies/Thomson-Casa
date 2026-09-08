@@ -12,7 +12,7 @@ import {
 } from "react-icons/md";
 import { BiPurchaseTagAlt } from "react-icons/bi";
 import { VscCreditCard, VscGraph } from "react-icons/vsc";
-import { FiFileText } from "react-icons/fi";
+import { FiFileText, FiShoppingCart } from "react-icons/fi";
 import { IoAnalytics } from "react-icons/io5";
 import { TbInvoice } from "react-icons/tb";
 const menus = [
@@ -20,6 +20,16 @@ const menus = [
     name: "Dashboard",
     icon: <MdOutlineDashboard size={22} />,
     path: "/",
+  },
+  {
+    name: "Customers",
+    icon: <MdPeople size={22} />,
+    path: "/customers",
+  },
+  {
+    name: "Orders",
+    icon: <FiShoppingCart size={22} />,
+    path: "/orders",
   },
   {
     name: "Sales Report",

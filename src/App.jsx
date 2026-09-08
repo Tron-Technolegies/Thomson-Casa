@@ -11,12 +11,18 @@ import AdvanceBalance from "./pages/AdvanceBalance";
 import AdvanceAnalytics from "./pages/AdvanceAnalytics";
 import Invoice from "./pages/Invoice";
 import Notification from "./pages/Notification";
+import Customers from "./pages/Customers";
+import Orders from "./pages/Orders";
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
+
+        <Route path="customers" element={<Customers />} />
+        
+        <Route path="orders" element={<Orders />} />
 
         <Route path="sales-report" element={<SalesReport />} />
 
