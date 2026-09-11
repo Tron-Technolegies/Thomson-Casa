@@ -10,17 +10,41 @@ function PurchasePricingModal({ open, onClose, order, dailyPrices, onSuccess }) 
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  const [customerPrices, setCustomerPrices] = useState({});
+
+  useEffect(() => {
+    const fetchCustomerPrices = async () => {
+      if (order && order.customer_id) {
+        try {
+          const res = await api.get(`/admin/customers/${order.customer_id}/prices/`);
+          if (res.success) {
+            setCustomerPrices(res.prices || {});
+          } else {
+            setCustomerPrices({});
+          }
+        } catch (err) {
+          console.error("Failed to fetch customer prices", err);
+        }
+      }
+    };
+    fetchCustomerPrices();
+  }, [order]);
+
   useEffect(() => {
     if (order && order.items) {
       const initialPrices = {};
       order.items.forEach(item => {
         let price = item.price_per_kg || "";
         
-        // If no price set, try to prefill from market
-        if (!price && dailyPrices && Array.isArray(dailyPrices)) {
-          const priceObj = dailyPrices.find(p => p.chicken_type === item.chicken_type);
-          if (priceObj) {
-            price = priceObj.price;
+        // If no price set, try to prefill from customer price or market
+        if (!price) {
+          if (customerPrices[item.chicken_type]) {
+            price = customerPrices[item.chicken_type];
+          } else if (dailyPrices && Array.isArray(dailyPrices)) {
+            const priceObj = dailyPrices.find(p => p.chicken_type === item.chicken_type);
+            if (priceObj) {
+              price = priceObj.price;
+            }
           }
         }
         
@@ -32,7 +56,7 @@ function PurchasePricingModal({ open, onClose, order, dailyPrices, onSuccess }) 
       setError("");
       setSuccessMsg("");
     }
-  }, [order, dailyPrices]);
+  }, [order, dailyPrices, customerPrices]);
 
   if (!open || !order) return null;
 
@@ -238,6 +262,9 @@ function PurchasePricingModal({ open, onClose, order, dailyPrices, onSuccess }) 
                       <label className="text-sm text-gray-500 font-medium">Selling Price (₹ per Kg)</label>
                       <span className="text-xs font-medium text-gray-500">
                         Market: <span className="text-orange-500 font-bold">{mktPrice ? `₹${mktPrice}` : "N/A"}</span>
+                        {customerPrices[item.chicken_type] && (
+                          <span className="ml-2 bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Custom: ₹{customerPrices[item.chicken_type]}</span>
+                        )}
                       </span>
                     </div>
                     <div className="flex gap-3">

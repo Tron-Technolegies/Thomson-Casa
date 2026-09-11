@@ -3,19 +3,24 @@ import { FiEdit2, FiX } from "react-icons/fi";
 import { api } from "../../services/api";
 
 export default function MarketPrices({ date }) {
+  const [categories, setCategories] = useState([]);
   const [dailyPrices, setDailyPrices] = useState({});
   const [isEditing, setIsEditing] = useState(false);
-  const [pricesForm, setPricesForm] = useState({
-    "Full Chicken": "",
-    "Dressed Chicken": "",
-    "Boneless Chicken": ""
-  });
+  const [pricesForm, setPricesForm] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const fetchPrices = async () => {
+  const fetchPricesAndCategories = async () => {
     try {
       const url = date ? `/admin/daily-prices/?date=${date}` : "/admin/daily-prices/";
-      const priceRes = await api.get(url);
+      const [priceRes, catRes] = await Promise.all([
+        api.get(url),
+        api.get('/admin/categories/')
+      ]);
+      
+      if (catRes.success) {
+        setCategories(catRes.categories);
+      }
+      
       if (priceRes.success && priceRes.prices) {
         setDailyPrices(priceRes.prices);
       }
@@ -25,15 +30,15 @@ export default function MarketPrices({ date }) {
   };
 
   useEffect(() => {
-    fetchPrices();
+    fetchPricesAndCategories();
   }, [date]);
 
   const handleEditClick = () => {
-    setPricesForm({
-      "Full Chicken": dailyPrices["Full Chicken"] || "",
-      "Dressed Chicken": dailyPrices["Dressed Chicken"] || "",
-      "Boneless Chicken": dailyPrices["Boneless Chicken"] || ""
+    const initialForm = {};
+    categories.forEach(cat => {
+      initialForm[cat.name] = dailyPrices[cat.name] || "";
     });
+    setPricesForm(initialForm);
     setIsEditing(true);
   };
 
@@ -46,7 +51,7 @@ export default function MarketPrices({ date }) {
         date: date
       });
       if (res.success) {
-        fetchPrices();
+        fetchPricesAndCategories();
       }
       setIsEditing(false);
     } catch (err) {
@@ -67,18 +72,20 @@ export default function MarketPrices({ date }) {
         </div>
         
         <div className="grid grid-cols-2 gap-3 h-full">
-          <div className="bg-white border border-[#00000026] rounded-xl p-4 shadow-sm flex flex-col justify-center transition-transform hover:-translate-y-1 hover:shadow-md">
-            <h4 className="text-xs font-bold text-gray-500 mb-1 uppercase">Dressed Chicken</h4>
-            <span className="text-orange-500 font-bold text-lg">₹{dailyPrices["Dressed Chicken"] || "---"}/kg</span>
-          </div>
-          <div className="bg-white border border-[#00000026] rounded-xl p-4 shadow-sm flex flex-col justify-center transition-transform hover:-translate-y-1 hover:shadow-md">
-            <h4 className="text-xs font-bold text-gray-500 mb-1 uppercase">Full Chicken</h4>
-            <span className="text-orange-500 font-bold text-lg">₹{dailyPrices["Full Chicken"] || "---"}/kg</span>
-          </div>
-          <div className="bg-white border border-[#00000026] rounded-xl p-4 shadow-sm flex flex-col justify-center col-span-2 transition-transform hover:-translate-y-1 hover:shadow-md">
-            <h4 className="text-xs font-bold text-gray-500 mb-1 uppercase">Boneless Chicken</h4>
-            <span className="text-orange-500 font-bold text-lg">₹{dailyPrices["Boneless Chicken"] || "---"}/kg</span>
-          </div>
+          {categories.map((cat, index) => (
+            <div 
+              key={cat.id} 
+              className={`bg-white border border-[#00000026] rounded-xl p-4 shadow-sm flex flex-col justify-center transition-transform hover:-translate-y-1 hover:shadow-md ${categories.length % 2 !== 0 && index === categories.length - 1 ? 'col-span-2' : ''}`}
+            >
+              <h4 className="text-xs font-bold text-gray-500 mb-1 uppercase">{cat.name}</h4>
+              <span className="text-orange-500 font-bold text-lg">₹{dailyPrices[cat.name] || "---"}/kg</span>
+            </div>
+          ))}
+          {categories.length === 0 && (
+            <div className="col-span-2 text-center text-gray-500 text-sm py-4">
+              No categories available. Add categories from Admin Dashboard.
+            </div>
+          )}
         </div>
       </div>
 
