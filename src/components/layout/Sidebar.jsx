@@ -1,14 +1,12 @@
-import { NavLink } from "react-router-dom";
+import { NavLink,useNavigate  } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 import {
   MdOutlineDashboard,
-  MdDescription,
   MdPeople,
-  MdAssessment,
   MdOutlineAccountBalanceWallet,
-  MdAnalytics,
-  MdReceipt,
   MdClose,
+  MdLogout 
 } from "react-icons/md";
 import { BiPurchaseTagAlt } from "react-icons/bi";
 import { VscCreditCard, VscGraph } from "react-icons/vsc";
@@ -73,7 +71,16 @@ const menus = [
   },
 ];
 
+
 function Sidebar({ sidebarOpen, setSidebarOpen }) {
+    const { logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+      logout();
+      setSidebarOpen(false);
+      navigate("/login");
+    };
   return (
     <>
       {/* Mobile Overlay */}
@@ -105,7 +112,7 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
 
         {/* Menu */}
 
-        <nav className="mt-6 px-4 space-y-2">
+        <nav className="mt-6 px-4 space-y-2 h-[calc(100vh-6rem)] overflow-y-auto pb-6">
           {menus.map((menu) => (
             <NavLink
               key={menu.path}
@@ -125,6 +132,15 @@ function Sidebar({ sidebarOpen, setSidebarOpen }) {
               <span>{menu.name}</span>
             </NavLink>
           ))}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-gray-600 hover:bg-gray-100 transition"
+          >
+            <MdLogout size={22} />
+            <span>Logout</span>
+          </button>
+
+
         </nav>
       </aside>
     </>
