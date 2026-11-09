@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }) => {
       if (decoded.role?.toLowerCase() !== EXPECTED_ROLE) {
         return {
           success: false,
-          error: 'You are not authorized to access the Accounts portal. Please use your correct login portal.'
+          error: 'This is not an Accounts account. Please use the correct login portal.'
         };
       }
 
@@ -106,15 +106,31 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Login error:', error);
 
+      const message = error.message?.toLowerCase() || '';
+
+      if (
+        message.includes('no active account') ||
+        message.includes('invalid credentials') ||
+        message.includes('401') ||
+        message.includes('credential')
+      ) {
+        return {
+          success: false,
+          error: 'Invalid username or password. Please try again.'
+        };
+      }
+
       return {
         success: false,
-        error: error.message || 'Login failed. Please try again.'
+        error: 'Unable to log in. Please try again later.'
       };
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    api.clearCache();
+
+    localStorage.removeItem("token");
     setToken(null);
     setUser(null);
   };
