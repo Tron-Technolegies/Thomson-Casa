@@ -120,101 +120,152 @@ export default function Customers() {
       </div>
 
       <div className="bg-white border border-[#00000026] rounded-xl">
-        {/* Filters */}
-        <div className="p-6 border-b border-[#00000026] flex gap-4 items-center flex-wrap">
-          <div className="flex-1 flex items-center bg-[#F7F7F7] border border-[#00000026] rounded-xl px-4 py-3 min-w-[250px] max-w-2xl">
-            <FiSearch className="text-gray-400 mr-2" size={20} />
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              className="bg-transparent w-full outline-none text-gray-700"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-4 ml-auto relative" ref={filterRef}>
-            <button 
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl border font-medium transition ${isFilterOpen ? 'bg-[#465C8F] text-white border-[#465C8F]' : 'bg-white border-[#00000026] text-gray-700 hover:bg-gray-50'}`}
+        
+          {/* Filters */}
+          <div className="p-3 sm:p-4 lg:p-6 border-b border-[#00000026] flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 sm:items-center w-full min-w-0">
+
+            {/* Search */}
+            <div className="flex items-center bg-[#F7F7F7] border border-[#00000026] rounded-xl px-3 sm:px-4 py-3 w-full min-w-0 sm:flex-1 sm:min-w-[180px] lg:min-w-[250px] lg:max-w-2xl">
+              <FiSearch
+                className="text-gray-400 mr-2 shrink-0"
+                size={20}
+              />
+
+              <input
+                type="text"
+                placeholder="Search..."
+                className="bg-transparent w-full min-w-0 outline-none text-gray-700 text-sm sm:text-base"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            {/* Filters & Sort */}
+            <div
+              className="flex items-center relative w-full sm:w-auto sm:ml-auto min-w-0"
+              ref={filterRef}
             >
-              <FiFilter size={20} />
-              Filters & Sort
-              <FiChevronDown className={`transition-transform ${isFilterOpen ? 'rotate-180' : ''}`} />
-            </button>
+              <button
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`flex items-center justify-center sm:justify-between gap-2 px-3 sm:px-4 py-3 rounded-xl border font-medium transition w-full sm:w-auto text-sm sm:text-base ${
+                  isFilterOpen
+                    ? "bg-[#465C8F] text-white border-[#465C8F]"
+                    : "bg-white border-[#00000026] text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <FiFilter size={20} className="shrink-0" />
 
-            {isFilterOpen && (
-              <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-5 z-20 max-h-[60vh] overflow-y-auto">
-                <div className="space-y-5">
-                  
-                  {/* Status Filter */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Status</label>
-                    <div className="flex gap-2">
-                      {['all', 'active', 'inactive'].map(s => (
-                        <button
-                          key={s}
-                          onClick={() => setStatusFilter(s)}
-                          className={`flex-1 py-1.5 text-sm font-medium rounded-lg capitalize transition ${statusFilter === s ? 'bg-[#465C8F] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                        >
-                          {s}
-                        </button>
-                      ))}
+                <span>Filters & Sort</span>
+
+                <FiChevronDown
+                  className={`shrink-0 transition-transform ${
+                    isFilterOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Filter Dropdown */}
+              {isFilterOpen && (
+                <div className="absolute top-full right-0 mt-2 w-full sm:w-72 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-5 z-20 max-h-[60vh] overflow-y-auto">
+                  <div className="space-y-5">
+
+                    {/* Status Filter */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        Status
+                      </label>
+
+                      <div className="flex gap-2">
+                        {["all", "active", "inactive"].map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => setStatusFilter(s)}
+                            className={`flex-1 min-w-0 py-1.5 text-xs sm:text-sm font-medium rounded-lg capitalize transition ${
+                              statusFilter === s
+                                ? "bg-[#465C8F] text-white"
+                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Type Filter */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Customer Type</label>
-                    <select 
-                      className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2 outline-none text-gray-700 text-sm focus:border-[#465C8F]"
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value)}
-                    >
-                      <option value="all">All Types</option>
-                      <option value="wholesale">Wholesale</option>
-                      <option value="regular">Regular</option>
-                      <option value="new_customer">New Customer</option>
-                    </select>
-                  </div>
+                    {/* Type Filter */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        Customer Type
+                      </label>
 
-                  {/* Sort */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Sort By Performance</label>
-                    <select 
-                      className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2 outline-none text-gray-700 text-sm focus:border-[#465C8F]"
-                      value={sortOption}
-                      onChange={(e) => setSortOption(e.target.value)}
-                    >
-                      <option value="newest">Newest First (Default)</option>
-                      <option value="score_high">Highest Score First</option>
-                      <option value="score_low">Lowest Score First</option>
-                      <option value="qty_high">Highest Purchase Qty</option>
-                      <option value="qty_low">Lowest Purchase Qty</option>
-                      <option value="orders_high">Most Orders</option>
-                      <option value="orders_low">Least Orders</option>
-                    </select>
-                  </div>
+                      <select
+                        className="w-full min-w-0 border border-gray-200 bg-gray-50 rounded-xl px-3 py-2 outline-none text-gray-700 text-sm focus:border-[#465C8F]"
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                      >
+                        <option value="all">All Types</option>
+                        <option value="wholesale">Wholesale</option>
+                        <option value="regular">Regular</option>
+                        <option value="new_customer">New Customer</option>
+                      </select>
+                    </div>
 
-                  {/* Clear Button */}
-                  <div className="pt-2 border-t border-gray-100">
-                    <button
-                      onClick={() => {
-                        setStatusFilter('all');
-                        setTypeFilter('all');
-                        setSortOption('newest');
-                        setIsFilterOpen(false);
-                      }}
-                      className="w-full py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition"
-                    >
-                      Clear Filters
-                    </button>
-                  </div>
+                    {/* Sort */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                        Sort By Performance
+                      </label>
 
+                      <select
+                        className="w-full min-w-0 border border-gray-200 bg-gray-50 rounded-xl px-3 py-2 outline-none text-gray-700 text-sm focus:border-[#465C8F]"
+                        value={sortOption}
+                        onChange={(e) => setSortOption(e.target.value)}
+                      >
+                        <option value="newest">
+                          Newest First (Default)
+                        </option>
+                        <option value="score_high">
+                          Highest Score First
+                        </option>
+                        <option value="score_low">
+                          Lowest Score First
+                        </option>
+                        <option value="qty_high">
+                          Highest Purchase Qty
+                        </option>
+                        <option value="qty_low">
+                          Lowest Purchase Qty
+                        </option>
+                        <option value="orders_high">
+                          Most Orders
+                        </option>
+                        <option value="orders_low">
+                          Least Orders
+                        </option>
+                      </select>
+                    </div>
+
+                    {/* Clear Button */}
+                    <div className="pt-2 border-t border-gray-100">
+                      <button
+                        onClick={() => {
+                          setStatusFilter("all");
+                          setTypeFilter("all");
+                          setSortOption("newest");
+                          setIsFilterOpen(false);
+                        }}
+                        className="w-full py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition"
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
+
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+
 
         {/* Table */}
         <CustomerTable 

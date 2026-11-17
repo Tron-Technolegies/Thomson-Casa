@@ -12,36 +12,71 @@ function RecordPaymentModal({ open, onClose, invoice, onSuccess }) {
 
   if (!open || !invoice) return null;
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (loading) return;
+
     setError("");
+
+    const invoiceId = invoice?.invoice_id;
+    const paymentAmount = Number(amount);
+    const outstanding = Number(invoice?.balance || 0);
+
+    if (!invoiceId) {
+      setError("Invoice database ID is missing. Refresh the invoice page.");
+      return;
+    }
+
+    if (!Number.isFinite(paymentAmount) || paymentAmount <= 0) {
+      setError("Please enter a valid payment amount.");
+      return;
+    }
+
+    if (paymentAmount > outstanding) {
+      setError(
+        `Payment cannot exceed the outstanding amount of ₹${outstanding.toFixed(2)}.`
+      );
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const payload = {
-        amount: parseFloat(amount),
+        amount: paymentAmount,
         payment_method: paymentMethod,
-        reference_no: referenceNo,
-        note: note
+        reference_no: referenceNo.trim(),
+        note: note.trim(),
       };
 
-      const res = await api.post(`/accounts/invoices/${invoice.invoice_id || invoice.id}/payments/add/`, payload);
+      const res = await api.post(
+        `/accounts/invoices/${invoiceId}/payments/add/`,
+        payload
+      );
 
       if (res.success) {
         setAmount("");
         setReferenceNo("");
         setNote("");
-        onSuccess();
+
         onClose();
+        if (onSuccess) onSuccess();
       } else {
         setError(res.message || "Failed to record payment.");
       }
     } catch (err) {
-      setError("Error connecting to server.");
+      console.error("Invoice payment error:", err);
+
+      setError(
+        err?.message ||
+        "Payment request failed. Check the server connection."
+      );
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 p-4">

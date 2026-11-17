@@ -59,7 +59,10 @@ function CustomerPurchase() {
         />
 
         <div className="h-full">
-          <MarketPrices date={date} />
+              <MarketPrices
+        date={date}
+        onPricesUpdated={fetchData}
+      />
         </div>
       </div>
 

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import RecordPaymentModal from "../invoice/RecordPaymentModal";
 import { FaMoneyBillWave } from "react-icons/fa";
@@ -9,68 +10,185 @@ const badge = {
   Unpaid: "bg-orange-100 text-orange-600",
 };
 
-function OutstandingTable({ invoices = [], loading = false, onPaymentSuccess }) {
+function OutstandingTable({
+  invoices = [],
+  loading = false,
+  onPaymentSuccess,
+}) {
   const [openModal, setOpenModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-[#00000026] overflow-hidden">
-        <div className="flex justify-between items-center p-6 border-b border-[#00000026]">
-          <h2 className="text-xl font-semibold">Outstanding Payment Details</h2>
-          <button 
-            onClick={() => window.open(`${BASE_URL}/accounts/outstanding/pdf/`, '_blank')}
-            className="bg-red-100 text-red-500 px-4 py-2 rounded-lg font-semibold hover:bg-red-200 transition-colors cursor-pointer"
+      <div className="w-full min-w-0 max-w-full bg-white rounded-2xl border border-[#00000026] overflow-hidden">
+
+        {/* HEADER */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 lg:p-6 border-b border-[#00000026]">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 break-words">
+            Outstanding Payment Details
+          </h2>
+
+          <button
+            onClick={() =>
+              window.open(
+                `${BASE_URL}/accounts/outstanding/pdf/`,
+                "_blank"
+              )
+            }
+            className="w-full sm:w-auto shrink-0 bg-red-100 text-red-500 px-4 py-2 rounded-lg font-semibold hover:bg-red-200 transition-colors cursor-pointer"
           >
             PDF
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 text-gray-500">
+        {/* RESPONSIVE TABLE */}
+        <div className="w-full min-w-0">
+          <table className="block w-full text-sm lg:table lg:table-auto">
+
+            {/* DESKTOP HEADER */}
+            <thead className="hidden lg:table-header-group bg-gray-50 text-gray-500">
               <tr>
-                <th className="p-5 text-left font-bold uppercase tracking-wider text-xs">Invoice No</th>
-                <th className="text-left font-bold uppercase tracking-wider text-xs">Customer</th>
-                <th className="text-left font-bold uppercase tracking-wider text-xs">Outstanding</th>
-                <th className="text-left font-bold uppercase tracking-wider text-xs">Due Date</th>
-                <th className="text-left font-bold uppercase tracking-wider text-xs">Status</th>
-                <th className="text-center font-bold uppercase tracking-wider text-xs p-5">Action</th>
+                <th className="p-5 text-left font-bold uppercase tracking-wider text-xs">
+                  Invoice No
+                </th>
+                <th className="p-4 text-left font-bold uppercase tracking-wider text-xs">
+                  Customer
+                </th>
+                <th className="p-4 text-left font-bold uppercase tracking-wider text-xs">
+                  Outstanding
+                </th>
+                <th className="p-4 text-left font-bold uppercase tracking-wider text-xs">
+                  Due Date
+                </th>
+                <th className="p-4 text-left font-bold uppercase tracking-wider text-xs">
+                  Status
+                </th>
+                <th className="p-5 text-center font-bold uppercase tracking-wider text-xs">
+                  Action
+                </th>
               </tr>
             </thead>
 
-            <tbody>
+            <tbody className="block lg:table-row-group">
               {loading ? (
-                <tr>
-                  <td colSpan="6" className="p-5 text-center text-gray-500">Loading outstanding invoices...</td>
+                <tr className="block lg:table-row">
+                  <td
+                    colSpan="6"
+                    className="block lg:table-cell p-5 text-center text-gray-500"
+                  >
+                    Loading outstanding invoices...
+                  </td>
                 </tr>
               ) : invoices.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="p-5 text-center text-gray-500">No outstanding invoices.</td>
+                <tr className="block lg:table-row">
+                  <td
+                    colSpan="6"
+                    className="block lg:table-cell p-5 text-center text-gray-500"
+                  >
+                    No outstanding invoices.
+                  </td>
                 </tr>
               ) : (
                 invoices.map((row, index) => (
-                  <tr key={index} className="border-t border-[#00000026] hover:bg-gray-50">
-                    <td className="p-5 font-bold text-[#4B5EAA]">{row.id}</td>
-                    <td className="font-semibold text-gray-900">{row.customer}</td>
-                    <td className="font-black text-red-600">₹{row.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    <td className="text-gray-600 font-medium">{row.due_date}</td>
-                    <td>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${badge[row.status] || badge.Unpaid}`}>
+                  <tr
+                    key={index}
+                    className="
+                      grid grid-cols-2 sm:grid-cols-3
+                      gap-x-4 gap-y-4
+                      p-4 sm:p-5
+                      mx-3 my-3
+                      border border-gray-200 rounded-xl
+                      bg-white shadow-sm
+                      hover:bg-gray-50 transition-colors
+
+                      lg:table-row
+                      lg:mx-0 lg:my-0 lg:p-0
+                      lg:border-0 lg:border-t lg:border-[#00000026]
+                      lg:rounded-none lg:shadow-none
+                    "
+                  >
+
+                    {/* INVOICE NUMBER */}
+                    <td className="col-span-2 sm:col-span-3 min-w-0 lg:table-cell lg:p-5 font-bold text-[#4B5EAA]">
+                      <span className="block text-[11px] font-semibold uppercase text-gray-400 mb-1 lg:hidden">
+                        Invoice No
+                      </span>
+
+                      <span className="block break-words">
+                        {row.id}
+                      </span>
+                    </td>
+
+                    {/* CUSTOMER */}
+                    <td className="col-span-2 sm:col-span-1 min-w-0 lg:table-cell lg:p-4 font-semibold text-gray-900">
+                      <span className="block text-[11px] font-semibold uppercase text-gray-400 mb-1 lg:hidden">
+                        Customer
+                      </span>
+
+                      <span className="block break-words">
+                        {row.customer}
+                      </span>
+                    </td>
+
+                    {/* OUTSTANDING */}
+                    <td className="min-w-0 lg:table-cell lg:p-4 font-black text-red-600">
+                      <span className="block text-[11px] font-semibold uppercase text-gray-400 mb-1 lg:hidden">
+                        Outstanding
+                      </span>
+
+                      <span className="block break-words">
+                        ₹
+                        {row.balance.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </td>
+
+                    {/* DUE DATE */}
+                    <td className="min-w-0 lg:table-cell lg:p-4 font-medium text-gray-600">
+                      <span className="block text-[11px] font-semibold uppercase text-gray-400 mb-1 lg:hidden">
+                        Due Date
+                      </span>
+
+                      <span className="block break-words">
+                        {row.due_date}
+                      </span>
+                    </td>
+
+                    {/* STATUS */}
+                    <td className="min-w-0 lg:table-cell lg:p-4">
+                      <span className="block text-[11px] font-semibold uppercase text-gray-400 mb-2 lg:hidden">
+                        Status
+                      </span>
+
+                      <span
+                        className={`inline-flex items-center max-w-full px-3 py-1 rounded-full text-xs font-bold ${
+                          badge[row.status] || badge.Unpaid
+                        }`}
+                      >
                         {row.status}
                       </span>
                     </td>
-                    <td className="p-5 text-center">
-                      <button
-                        onClick={() => {
-                          setSelectedInvoice(row);
-                          setOpenModal(true);
-                        }}
-                        className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 cursor-pointer hover:bg-green-700 mx-auto text-sm font-bold transition-colors shadow-sm"
-                      >
-                        <FaMoneyBillWave />
-                        Pay
-                      </button>
+
+                    {/* PAY ACTION */}
+                    <td className="col-span-2 sm:col-span-3 min-w-0 pt-3 border-t border-gray-100 lg:table-cell lg:p-5 lg:border-0 lg:text-center">
+                      <div className="flex items-center justify-between lg:justify-center gap-3">
+                        <span className="text-[11px] font-semibold uppercase text-gray-400 lg:hidden">
+                          Action
+                        </span>
+
+                        <button
+                          onClick={() => {
+                            setSelectedInvoice(row);
+                            setOpenModal(true);
+                          }}
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center justify-center gap-2 cursor-pointer hover:bg-green-700 text-sm font-bold transition-colors shadow-sm"
+                        >
+                          <FaMoneyBillWave />
+                          Pay
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -80,6 +198,7 @@ function OutstandingTable({ invoices = [], loading = false, onPaymentSuccess }) 
         </div>
       </div>
 
+      {/* EXISTING RECORD PAYMENT MODAL */}
       <RecordPaymentModal
         open={openModal}
         onClose={() => setOpenModal(false)}

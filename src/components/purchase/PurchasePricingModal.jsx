@@ -1,226 +1,429 @@
+
 import { useState, useEffect } from "react";
 import { IoClose } from "react-icons/io5";
 import { api } from "../../services/api";
 
-function PurchasePricingModal({ open, onClose, order, dailyPrices, onSuccess }) {
-  const [itemPrices, setItemPrices] = useState({});
+function PurchasePricingModal({
+  open,
+  onClose,
+  order,
+  dailyPrices,
+  onSuccess,
+}) {
   const [gstType, setGstType] = useState("percentage");
   const [gstInput, setGstInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [pricingMode, setPricingMode] = useState("live_rate");
+  const [customerLiveRate, setCustomerLiveRate] = useState(null);
+  const [liveRateOverrides, setLiveRateOverrides] = useState({});
+  const [meatRateOverrides, setMeatRateOverrides] = useState({});
+  const [ratesLoading, setRatesLoading] = useState(false);
+  const [customerRatesError, setCustomerRatesError] = useState(false);
 
-  const [customerPrices, setCustomerPrices] = useState({});
+  // Round values to 2 decimal places
+  const roundMoney = (value) =>
+    Math.round((value + Number.EPSILON) * 100) / 100;
 
-  useEffect(() => {
-    const fetchCustomerPrices = async () => {
-      if (order && order.customer_id) {
-        try {
-          const res = await api.get(`/admin/customers/${order.customer_id}/prices/`);
-          if (res.success) {
-            setCustomerPrices(res.prices || {});
-          } else {
-            setCustomerPrices({});
-          }
-        } catch (err) {
-          console.error("Failed to fetch customer prices", err);
-        }
+  // Normalize chicken type names for matching
+  const normalizeType = (type) =>
+    String(type || "").trim().toLowerCase();
+
+  // Get daily live rate for a chicken type
+const getTodayLocalDate = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+    const getDailyLiveRate = (chickenType) => {
+      if (!dailyPrices) return null;
+
+      const today = getTodayLocalDate();
+      const normalizedChickenType = normalizeType(chickenType);
+
+      if (Array.isArray(dailyPrices)) {
+        const found = dailyPrices.find(
+          (item) =>
+            normalizeType(item.chicken_type) === normalizedChickenType &&
+            item.date === today
+        );
+
+        if (!found) return null;
+
+        const rate = Number(found.price);
+        return Number.isFinite(rate) && rate > 0 ? rate : null;
       }
+
+      if (dailyPrices.date !== today) return null;
+
+      const prices = dailyPrices.prices || {};
+
+      const matchingEntry = Object.entries(prices).find(
+        ([key]) => normalizeType(key) === normalizedChickenType
+      );
+
+      if (!matchingEntry) return null;
+
+      const value = matchingEntry[1];
+      const rate = Number(
+        typeof value === "object" ? value?.price : value
+      );
+
+      return Number.isFinite(rate) && rate > 0 ? rate : null;
     };
-    fetchCustomerPrices();
-  }, [order]);
+
+      const getCustomerLiveRate = (chickenType) => {
+        const rate = Number(customerLiveRate);
+
+        return customerLiveRate !== null &&
+          customerLiveRate !== "" &&
+          Number.isFinite(rate) &&
+          rate > 0
+          ? rate
+          : null;
+      };
+
+
+  // Calculate pricing for each order item
+const pricingRows = (order?.items || []).map((item) => {
+  const dailyLiveRate = getDailyLiveRate(item.chicken_type);
+  const customerLiveRate = getCustomerLiveRate(item.chicken_type);
+
+  // Customer rate takes priority over the global daily rate.
+  const defaultLiveRate =
+    customerLiveRate !== null
+      ? customerLiveRate
+      : dailyLiveRate;
+
+  // Use the manually edited rate if one exists.
+  const hasOverride = Object.prototype.hasOwnProperty.call(
+    liveRateOverrides,
+    item.id
+  );
+
+  const liveRate = hasOverride
+    ? Number(liveRateOverrides[item.id])
+    : defaultLiveRate;
+
+  const weight = Number(item.weight);
+  const yieldPercentage = Number(item.approx_yield_percentage);
+
+  const validLiveRate =
+    Number.isFinite(liveRate) && liveRate > 0;
+
+  const validYield =
+    Number.isFinite(yieldPercentage) &&
+    yieldPercentage > 0 &&
+    yieldPercentage <= 100;
+
+  const validWeight =
+    Number.isFinite(weight) && weight > 0;
+
+
+  let autoMeatRate = null;
+
+  if (validLiveRate && validYield) {
+    autoMeatRate = roundMoney(
+      (liveRate * 100) / yieldPercentage
+    );
+  }
+
+  const hasMeatOverride = Object.prototype.hasOwnProperty.call(
+    meatRateOverrides,
+    item.id
+  );
+
+  const meatRate = hasMeatOverride
+    ? Number(meatRateOverrides[item.id])
+    : autoMeatRate;
+
+
+  const selectedRate =
+    pricingMode === "live_rate" ? liveRate : meatRate;
+
+  const validSelectedRate =
+    selectedRate !== null &&
+    Number.isFinite(selectedRate) &&
+    selectedRate > 0;
+
+  const subtotal =
+    validSelectedRate && validWeight
+      ? roundMoney(weight * selectedRate)
+      : 0;
+
+  return {
+    id: item.id,
+    chickenType: item.chicken_type,
+    weight,
+    liveRate,
+    defaultLiveRate,
+    rateSource: hasOverride
+      ? "Manually adjusted for this invoice"
+      : customerLiveRate !== null
+      ? "Customer-specific rate"
+      : "Daily market rate",
+    yieldPercentage,
+    autoMeatRate,
+    hasMeatOverride,
+    meatRate,
+    selectedRate,
+    subtotal,
+    validLiveRate,
+    validYield,
+    validWeight,
+    validSelectedRate,
+  };
+});
+
+  // Calculate invoice subtotal
+  const currentSubtotal = roundMoney(
+    pricingRows.reduce((sum, item) => sum + item.subtotal, 0)
+  );
+
+  // Calculate GST
+  const gstValue = Number(gstInput) || 0;
+
+  const currentGstAmount = roundMoney(
+    gstType === "percentage"
+      ? currentSubtotal * (gstValue / 100)
+      : gstValue
+  );
+
+  const currentTotal = roundMoney(
+    currentSubtotal + currentGstAmount
+  );
+
 
   useEffect(() => {
-    if (order && order.items) {
-      const initialPrices = {};
-      order.items.forEach(item => {
-        let price = item.price_per_kg || "";
-        
-        // If no price set, try to prefill from customer price or market
-        if (!price) {
-          if (customerPrices[item.chicken_type]) {
-            price = customerPrices[item.chicken_type];
-          } else if (dailyPrices && Array.isArray(dailyPrices)) {
-            const priceObj = dailyPrices.find(p => p.chicken_type === item.chicken_type);
-            if (priceObj) {
-              price = priceObj.price;
-            }
-          }
-        }
-        
-        initialPrices[item.id] = price;
-      });
-      setItemPrices(initialPrices);
+  if (!open || !order) return;
+
+  let cancelled = false;
+
+  const fetchCustomerPrices = async () => {
+    setRatesLoading(true);
+    setCustomerRatesError(false);
+    setCustomerLiveRate(null);
+    setLiveRateOverrides({});
+    setMeatRateOverrides({});
+
+    try {
+      if (!order.customer_id) {
+        throw new Error("Customer ID is missing from the order.");
+      }
+
+      const response = await api.get(
+        `/admin/customers/${order.customer_id}/live-rate/`,
+        false
+      );
+
+      if (!response.success) {
+        throw new Error(
+          response.message || "Unable to fetch customer rates."
+        );
+      }
+
+      if (!cancelled) {
+        setCustomerLiveRate(response.live_rate ?? null);
+      }
+    } catch (error) {
+      console.error("Customer rate fetch error:", error);
+
+      if (!cancelled) {
+        setCustomerRatesError(true);
+        setError("Unable to load customer-specific rates. Please try again.");
+      }
+    } finally {
+      if (!cancelled) {
+        setRatesLoading(false);
+      }
+    }
+  };
+
+  fetchCustomerPrices();
+
+  return () => {
+    cancelled = true;
+  };
+}, [open, order?.id, order?.customer_id]);
+  // Reset modal values when opening a new order
+  useEffect(() => {
+    if (open && order) {
+      setPricingMode("live_rate");
       setGstType("percentage");
       setGstInput("");
       setError("");
       setSuccessMsg("");
     }
-  }, [order, dailyPrices, customerPrices]);
+  }, [open, order?.id]);
 
   if (!open || !order) return null;
 
-  const handlePriceChange = (id, value) => {
-    setItemPrices(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  };
 
-  const getMarketPrice = (type) => {
-    if (!dailyPrices || !Array.isArray(dailyPrices)) return null;
-    const priceObj = dailyPrices.find(p => p.chicken_type === type);
-    return priceObj ? priceObj.price : null;
-  };
-
-  const setMarketPrice = (id, type) => {
-    const p = getMarketPrice(type);
-    if (p !== null) {
-      handlePriceChange(id, p);
+  // Validate pricing before invoice generation
+  const validatePricing = () => {
+    if (!pricingRows.length) {
+      return "This order does not contain any items.";
     }
-  };
-
-  // Live calculation for preview
-  const currentSubtotal = order?.items?.reduce((sum, item) => {
-    const val = parseFloat(itemPrices[item.id]);
-    const weight = parseFloat(item.weight);
-    if (!isNaN(val) && !isNaN(weight)) {
-      return sum + (val * weight);
+    if (ratesLoading) {
+      return "Please wait while customer rates are loading.";
     }
-    return sum;
-  }, 0) || 0;
 
-  let currentGstAmount = 0;
-  const gstVal = parseFloat(gstInput) || 0;
-  if (gstType === "percentage") {
-    currentGstAmount = currentSubtotal * (gstVal / 100);
-  } else {
-    currentGstAmount = gstVal;
-  }
-  const currentTotal = currentSubtotal + currentGstAmount;
+    if (customerRatesError) {
+      return "Unable to load customer rates. Please reopen the invoice.";
+    }
 
-  const handleSave = async () => {
-    setError("");
-    setLoading(true);
+    const invalidItem = pricingRows.find(
+      (item) => !item.validWeight || !item.validSelectedRate
+    );
 
-    const itemsToSave = order.items.map(item => {
-      const val = parseFloat(itemPrices[item.id]);
-      return {
-        id: item.id,
-        price_per_kg: isNaN(val) ? null : val
-      };
-    });
-
-    // Validation
-    const invalidItem = itemsToSave.find(i => i.price_per_kg === null || i.price_per_kg < 0);
     if (invalidItem) {
-      setError("Please enter a valid positive price for all items.");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await api.post(`/accounts/orders/${order.id}/pricing/`, {
-        items: itemsToSave
-      });
-
-      if (res.success) {
-        setSuccessMsg("Pricing saved successfully.");
-        if (onSuccess) onSuccess();
-      } else {
-        setError(res.message || "Failed to save pricing.");
+      if (!invalidItem.validWeight) {
+        return `Invalid weight for ${invalidItem.chickenType}.`;
       }
-    } catch (err) {
-      console.error(err);
-      setError("An error occurred while saving.");
-    } finally {
-      setLoading(false);
+
+      if (!invalidItem.validLiveRate) {
+        return `Please enter a valid Live Rate for ${invalidItem.chickenType}.`;
+      }
+
+      if (
+          pricingMode === "meat_rate" &&
+          !invalidItem.validYield &&
+          !invalidItem.hasMeatOverride
+        ) {
+        return `Valid Yield Percentage is missing for ${invalidItem.chickenType}.`;
+      }
+
+      return `Unable to calculate the selected rate for ${invalidItem.chickenType}.`;
     }
+
+    if (!Number.isFinite(gstValue) || gstValue < 0) {
+      return "Please enter a valid GST value.";
+    }
+
+    return null;
   };
 
+  // Generate invoice
   const handleGenerateInvoice = async () => {
     setError("");
     setSuccessMsg("");
-    setLoading(true);
 
-    const itemsToSave = order.items.map(item => {
-      const val = parseFloat(itemPrices[item.id]);
-      return {
-        id: item.id,
-        price_per_kg: isNaN(val) ? null : val
-      };
-    });
+    const validationError = validatePricing();
 
-    const invalidItem = itemsToSave.find(i => i.price_per_kg === null || i.price_per_kg < 0);
-    if (invalidItem) {
-      setError("Please enter a valid positive price for all items.");
-      setLoading(false);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
+    setLoading(true);
+
     try {
-      // 1. Save pricing first
-      const priceRes = await api.post(`/accounts/orders/${order.id}/pricing/`, {
-        items: itemsToSave
-      });
+      const response = await api.post(
+        "/accounts/invoices/create/",
+        {
+          order_id: order.id,
+          pricing_mode: pricingMode,
+          gst_type: gstType,
+          gst_input: gstValue,
 
-      if (!priceRes.success) {
-        setError(priceRes.message || "Failed to save pricing.");
-        setLoading(false);
-        return;
-      }
 
-      // 2. Generate Invoice
-      const gstVal = parseFloat(gstInput) || 0;
-      const invRes = await api.post('/accounts/invoices/create/', {
-        order_id: order.id,
-        gst_type: gstType,
-        gst_input: gstVal
-      });
+        item_rates: pricingRows.map((item) => ({
+          order_item_id: item.id,
+          live_rate: item.liveRate,
+          meat_rate:
+            pricingMode === "meat_rate" && item.hasMeatOverride
+              ? item.meatRate
+              : null,
+        })),
 
-      if (invRes.success) {
-        setSuccessMsg("Invoice generated successfully! You can view it in the Invoices tab.");
+        }
+      );
+      if (response.success) {
+        setSuccessMsg(
+          "Invoice generated successfully!"
+        );
+
+        if (onSuccess) {
+          onSuccess();
+        }
+
         setTimeout(() => {
-          if (onSuccess) onSuccess();
           onClose();
-        }, 1500);
+        }, 1200);
       } else {
-        setError(invRes.message || "Failed to generate invoice.");
+        setError(
+          response.message || "Failed to generate invoice."
+        );
       }
     } catch (err) {
-      console.error(err);
-      setError("An error occurred during invoice generation.");
+      console.error("Invoice generation error:", err);
+
+      setError(
+        err?.data?.message ||
+        err?.message ||
+        "An error occurred during invoice generation."
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  const formatCurrency = (value) =>
+    `₹${Number(value || 0).toFixed(2)}`;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[90vh] flex flex-col">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl max-h-[90vh] flex flex-col">
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#00000026] px-6 py-5 shrink-0">
-          <h2 className="text-2xl font-bold">Pricing for {order.order_number}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-red-500 cursor-pointer">
+          <div>
+            <h2 className="text-2xl font-bold">
+              Invoice Pricing
+            </h2>
+
+            <p className="text-sm text-gray-500 mt-1">
+              Order: {order.order_number}
+            </p>
+          </div>
+
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="text-gray-500 hover:text-red-500 cursor-pointer"
+          >
             <IoClose size={28} />
           </button>
         </div>
 
         {/* Body */}
         <div className="p-6 space-y-6 overflow-y-auto">
+
+          {/* Error */}
           {error && (
             <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-200 text-sm font-medium">
               {error}
             </div>
           )}
+
+          {/* Success */}
           {successMsg && (
             <div className="bg-green-50 text-green-700 p-4 rounded-xl border border-green-200 text-sm font-medium">
               {successMsg}
             </div>
           )}
 
+          {/* Customer */}
           <div>
-            <label className="text-sm text-gray-500 font-medium">Customer</label>
+            <label className="text-sm text-gray-500 font-medium">
+              Customer
+            </label>
+
             <input
               type="text"
               value={order.customer || ""}
@@ -229,134 +432,300 @@ function PurchasePricingModal({ open, onClose, order, dailyPrices, onSuccess }) 
             />
           </div>
 
+          {/* Pricing Mode Selection */}
+<div className="space-y-3">
+  <h3 className="text-lg font-semibold">
+    Select Pricing Mode
+  </h3>
+
+  <div className="grid grid-cols-2 gap-3">
+    <button
+      type="button"
+      onClick={() => setPricingMode("live_rate")}
+      className={`rounded-xl border-2 p-4 text-left transition ${
+        pricingMode === "live_rate"
+          ? "border-orange-500 bg-orange-50"
+          : "border-gray-200 bg-white"
+      }`}
+    >
+      <span className="block font-semibold">
+        Live Rate
+      </span>
+      <span className="block text-xs text-gray-500 mt-1">
+        Use Daily Live Rate
+      </span>
+    </button>
+
+    <button
+      type="button"
+      onClick={() => setPricingMode("meat_rate")}
+      className={`rounded-xl border-2 p-4 text-left transition ${
+        pricingMode === "meat_rate"
+          ? "border-indigo-600 bg-indigo-50"
+          : "border-gray-200 bg-white"
+      }`}
+    >
+      <span className="block font-semibold">
+        Meat Rate
+      </span>
+      <span className="block text-xs text-gray-500 mt-1">
+        Automatically calculate Meat Rate
+      </span>
+    </button>
+  </div>
+</div>
+
+          {/* Pricing Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold border-b pb-2">Order Items</h3>
-            {order.items && order.items.map((item, idx) => {
-              const mktPrice = getMarketPrice(item.chicken_type);
-              
-              return (
-                <div key={item.id} className="bg-gray-50 p-4 rounded-xl border border-[#00000026] space-y-4">
-                  <div className="grid md:grid-cols-2 gap-5">
-                    <div>
-                      <label className="text-sm text-gray-500 font-medium">Chicken Type</label>
-                      <input
-                        type="text"
-                        value={item.chicken_type}
-                        readOnly
-                        className="mt-2 w-full border border-[#00000026] rounded-xl px-4 py-3 bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-500 font-medium">Weight</label>
-                      <input
-                        type="text"
-                        value={`${item.weight} Kg`}
-                        readOnly
-                        className="mt-2 w-full border border-[#00000026] rounded-xl px-4 py-3 bg-white text-orange-600 font-medium"
-                      />
-                    </div>
+            <div className="flex justify-between items-center border-b pb-2">
+              <h3 className="text-lg font-semibold">
+                Order Items
+              </h3>
+
+              <span className="text-xs text-gray-500">
+                Automatic Pricing
+              </span>
+            </div>
+
+            {pricingRows.map((item) => (
+              <div
+                key={item.id}
+                className="bg-gray-50 p-4 rounded-xl border border-[#00000026] space-y-4"
+              >
+                {/* Chicken Type and Weight */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-gray-500 font-medium">
+                      Chicken Type
+                    </label>
+
+                    <input
+                      type="text"
+                      value={item.chickenType || ""}
+                      readOnly
+                      className="mt-2 w-full border border-[#00000026] rounded-xl px-4 py-3 bg-white"
+                    />
                   </div>
 
                   <div>
-                    <div className="flex justify-between mb-2">
-                      <label className="text-sm text-gray-500 font-medium">Selling Price (₹ per Kg)</label>
-                      <span className="text-xs font-medium text-gray-500">
-                        Market: <span className="text-orange-500 font-bold">{mktPrice ? `₹${mktPrice}` : "N/A"}</span>
-                        {customerPrices[item.chicken_type] && (
-                          <span className="ml-2 bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Custom: ₹{customerPrices[item.chicken_type]}</span>
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex gap-3">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="₹0.00"
-                        value={itemPrices[item.id] !== undefined ? itemPrices[item.id] : ""}
-                        onChange={(e) => handlePriceChange(item.id, e.target.value)}
-                        className="flex-1 border border-[#00000026] rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none"
-                      />
-                      <button 
-                        onClick={() => setMarketPrice(item.id, item.chicken_type)}
-                        disabled={!mktPrice}
-                        className="px-6 rounded-xl bg-gray-200 hover:bg-gray-300 disabled:opacity-50 text-gray-700 font-medium transition cursor-pointer"
-                      >
-                        Use Market
-                      </button>
-                    </div>
+                    <label className="text-sm text-gray-500 font-medium">
+                      Weight
+                    </label>
+
+                    <input
+                      type="text"
+                      value={`${item.weight || 0} Kg`}
+                      readOnly
+                      className="mt-2 w-full border border-[#00000026] rounded-xl px-4 py-3 bg-white text-orange-600 font-medium"
+                    />
                   </div>
                 </div>
-              );
-            })}
+
+                {/* Editable Live Rate */}
+<div className="bg-white rounded-xl p-4 border border-orange-200">
+  <label className="text-sm text-gray-600 font-medium">
+    Live Rate (₹ / Kg)
+  </label>
+
+  <input
+    type="number"
+    min="0"
+    step="0.01"
+    value={
+      Object.prototype.hasOwnProperty.call(
+        liveRateOverrides,
+        item.id
+      )
+        ? liveRateOverrides[item.id]
+        : item.defaultLiveRate ?? ""
+    }
+    onChange={(e) => {
+      setLiveRateOverrides((prev) => ({
+        ...prev,
+        [item.id]: e.target.value,
+      }));
+    }}
+    className="mt-2 w-full border border-orange-200 rounded-xl px-4 py-3 text-lg font-bold text-orange-600 outline-none focus:ring-2 focus:ring-orange-300"
+    placeholder="Enter Live Rate"
+  />
+
+  <p className="text-xs text-gray-500 mt-2">
+    Default: {item.rateSource}
+  </p>
+</div>
+
+                {/* Selected Pricing Rate */}
+                {pricingMode === "live_rate" ? (
+                  <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                    <p className="text-sm text-gray-600">
+                      Daily Live Rate
+                    </p>
+
+                    <p className="text-2xl font-bold text-orange-600 mt-1">
+                      {item.validLiveRate
+                        ? `${formatCurrency(item.liveRate)} / Kg`
+                        : "Not Available"}
+                    </p>
+                  </div>
+
+                      ) : (
+                        <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+                          <div className="flex justify-between items-center gap-3 mb-3">
+                            <label className="text-sm font-medium text-gray-700">
+                              Meat Rate (₹ / Kg)
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMeatRateOverrides((prev) => {
+                                  const updated = { ...prev };
+                                  delete updated[item.id];
+                                  return updated;
+                                });
+                              }}
+                              className="text-xs font-semibold text-indigo-600 hover:underline"
+                            >
+                              Reset to Auto
+                            </button>
+                          </div>
+
+                          <input
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={
+                              item.hasMeatOverride
+                                ? meatRateOverrides[item.id]
+                                : item.autoMeatRate ?? ""
+                            }
+                            onChange={(e) => {
+                              setMeatRateOverrides((prev) => ({
+                                ...prev,
+                                [item.id]: e.target.value,
+                              }));
+                            }}
+                            placeholder="Enter Meat Rate"
+                            className="w-full border border-indigo-200 rounded-xl px-4 py-3 text-xl font-bold text-indigo-700 bg-white outline-none focus:ring-2 focus:ring-indigo-300"
+                          />
+
+                          <p className="text-xs text-gray-500 mt-2">
+                            {item.hasMeatOverride
+                              ? `Manually entered rate. Auto rate: ${
+                                  item.autoMeatRate !== null
+                                    ? `₹${item.autoMeatRate.toFixed(2)}/kg`
+                                    : "Unavailable"
+                                }`
+                              : "Automatically calculated from Live Rate and Yield Percentage"}
+                          </p>
+                        </div>
+                      )}
+
+
+                {/* Item Subtotal */}
+                <div className="flex justify-between items-center border-t pt-3">
+                  <span className="text-sm font-medium text-gray-600">
+                    Item Subtotal
+                  </span>
+
+                  <span className="text-lg font-bold text-gray-900">
+                    {formatCurrency(item.subtotal)}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* GST Section */}
           <div className="border-t pt-4">
-            <h3 className="text-lg font-semibold mb-4">Invoice Generation</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              Invoice Generation
+            </h3>
+
             <div className="bg-[#EEF1F8] p-5 rounded-xl border border-[#00000026] space-y-4">
+
               <div className="grid md:grid-cols-2 gap-5">
+
+                {/* GST Type */}
                 <div>
-                  <label className="text-sm text-gray-700 font-medium">GST Type</label>
+                  <label className="text-sm text-gray-700 font-medium">
+                    GST Type
+                  </label>
+
                   <select
                     value={gstType}
                     onChange={(e) => setGstType(e.target.value)}
                     className="mt-2 w-full border border-[#00000026] rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-[#4B5EAA]"
                   >
-                    <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed Amount (₹)</option>
+                    <option value="percentage">
+                      Percentage (%)
+                    </option>
+
+                    <option value="fixed">
+                      Fixed Amount (₹)
+                    </option>
                   </select>
                 </div>
+
+                {/* GST Value */}
                 <div>
                   <label className="text-sm text-gray-700 font-medium">
                     GST Value {gstType === "percentage" ? "(%)" : "(₹)"}
                   </label>
+
                   <input
                     type="number"
                     min="0"
                     step="0.01"
-                    placeholder={gstType === "percentage" ? "5" : "500"}
+                    placeholder={
+                      gstType === "percentage" ? "5" : "500"
+                    }
                     value={gstInput}
                     onChange={(e) => setGstInput(e.target.value)}
                     className="mt-2 w-full border border-[#00000026] rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-[#4B5EAA]"
                   />
                 </div>
               </div>
-              
-              {/* Live Preview */}
+
+              {/* Invoice Preview */}
               <div className="mt-4 pt-4 border-t border-[#00000015]">
-                <div className="flex justify-between items-center text-sm mb-2 text-gray-600">
+
+                <div className="flex justify-between items-center text-sm mb-3 text-gray-600">
                   <span>Subtotal</span>
-                  <span className="font-medium">₹{currentSubtotal.toFixed(2)}</span>
+
+                  <span className="font-medium">
+                    {formatCurrency(currentSubtotal)}
+                  </span>
                 </div>
-                <div className="flex justify-between items-center text-sm mb-2 text-gray-600">
+
+                <div className="flex justify-between items-center text-sm mb-3 text-gray-600">
                   <span>GST Amount</span>
-                  <span className="font-medium">₹{currentGstAmount.toFixed(2)}</span>
+
+                  <span className="font-medium">
+                    {formatCurrency(currentGstAmount)}
+                  </span>
                 </div>
-                <div className="flex justify-between items-center text-base mt-2 pt-2 border-t border-[#00000015] text-gray-900 font-bold">
+
+                <div className="flex justify-between items-center text-base mt-2 pt-3 border-t border-[#00000015] text-gray-900 font-bold">
                   <span>Total Amount</span>
-                  <span className="text-[#4B5EAA]">₹{currentTotal.toFixed(2)}</span>
+
+                  <span className="text-[#4B5EAA] text-xl">
+                    {formatCurrency(currentTotal)}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-4 mt-4">
-            <button 
-              onClick={handleSave}
-              disabled={loading}
-              className="flex-1 bg-white border border-[#4B5EAA] hover:bg-gray-50 disabled:opacity-50 text-[#4B5EAA] py-4 rounded-xl font-bold transition cursor-pointer"
-            >
-              {loading ? "Saving..." : "Save Pricing Draft"}
-            </button>
-            <button 
-              onClick={handleGenerateInvoice}
-              disabled={loading}
-              className="flex-1 bg-indigo-700 hover:bg-indigo-800 disabled:bg-indigo-400 text-white py-4 rounded-xl font-bold transition cursor-pointer"
-            >
-              {loading ? "Processing..." : "Generate Invoice"}
-            </button>
-          </div>
+          {/* Generate Invoice Button */}
+          <button
+            onClick={handleGenerateInvoice}
+            disabled={loading || !pricingRows.length}
+            className="w-full bg-indigo-700 hover:bg-indigo-800 disabled:bg-indigo-400 text-white py-4 rounded-xl font-bold transition cursor-pointer"
+          >
+            {loading ? "Generating Invoice..." : "Generate Invoice"}
+          </button>
+
         </div>
       </div>
     </div>
@@ -364,4 +733,3 @@ function PurchasePricingModal({ open, onClose, order, dailyPrices, onSuccess }) 
 }
 
 export default PurchasePricingModal;
-
